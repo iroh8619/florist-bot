@@ -157,4 +157,4 @@ client.on('messageCreate', async message => {
 
 
 // Use process.env to handle your bot token securely
-client.login("MTE3NTgzMjQyMjc0MzU0NDAyMg.GeNg4T.jERi80G7vpGTdzA_c-bCpth3jaxwVj0vbc8MKE");
+client.login(process.env.DISCORD_TOKEN);
