@@ -2,6 +2,48 @@ const { Client, Intents } = require('discord.js');
 const fs = require('fs');
 require('dotenv').config();
 
+async function updateMembersOnGitHub() {
+  const filePath = './members.json';
+  const githubRepo = 'iroh8619/florist-bot'; // remplace par ton nom de repo
+  const githubFilePath = 'members.json';
+  const githubToken = process.env.GITHUB_TOKEN;
+
+  if (!fs.existsSync(filePath)) return;
+
+  const content = fs.readFileSync(filePath, 'utf8');
+  const encodedContent = Buffer.from(content).toString('base64');
+
+  try {
+    const getRes = await fetch(`https://api.github.com/repos/${githubRepo}/contents/${githubFilePath}`, {
+      headers: {
+        Authorization: `token ${githubToken}`,
+        Accept: 'application/vnd.github.v3+json'
+      }
+    });
+
+    const fileData = await getRes.json();
+    const sha = fileData.sha;
+
+    await fetch(`https://api.github.com/repos/${githubRepo}/contents/${githubFilePath}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `token ${githubToken}`,
+        Accept: 'application/vnd.github.v3+json'
+      },
+      body: JSON.stringify({
+        message: '🔒 Update members.json',
+        content: encodedContent,
+        sha
+      })
+    });
+
+    console.log('✅ members.json updated on GitHub.');
+  } catch (err) {
+    console.error('❌ Failed to update members.json on GitHub:', err.message);
+  }
+}
+
+
 const client = new Client({
     intents: [
         Intents.FLAGS.GUILDS,
@@ -77,6 +119,7 @@ client.on('guildMemberAdd', async member => {
             }
             members.push(member.id);
             fs.writeFileSync(memberFile, JSON.stringify(members, null, 2));
+            updateMembersOnGitHub();
         }
     } catch (error) {
         console.error('Error in guildMemberAdd:', error);
@@ -98,6 +141,7 @@ client.on('messageCreate', async message => {
         if (memberIdIndex !== -1) {
             members.splice(memberIdIndex, 1);
             fs.writeFileSync(memberFile, JSON.stringify(members, null, 2));
+            updateMembersOnGitHub();
 
             const guestRole = message.guild.roles.cache.get(guestRoleId);
             const strangerRole = message.guild.roles.cache.get(strangerRoleId);
